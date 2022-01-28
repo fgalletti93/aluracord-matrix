@@ -1,24 +1,54 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzM4OTE0NywiZXhwIjoxOTU4OTY1MTQ3fQ.M9pRSL6h_NMHPl2xNRWeKsw7gCAoN5dwIhvKJto5V9k';
+const SUPABASE_URL = 'https://rpwhrroxnqhxfmtprgbc.supabase.co';
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
 
 export default function ChatPage() {
 
     const [mensagem, setMensagem] = React.useState('');
     const [listaMensagens, setListaMensagens] = React.useState([]);
 
+    React.useEffect(() => {
+        supabaseClient
+            .from('mensagens')
+            .select('*')
+            .order('id', { ascending: false })
+            .then(({ data }) => {
+                console.log('Dados da consulta: ', data);
+                setListaMensagens(data);
+            });
+    }, []);
+
+
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaMensagens.length,
-            de: 'vanessametonini',
+            //id: listaMensagens.length + 1,
+            de: 'fgalletti93',
             texto: novaMensagem,
         }
-        setListaMensagens([
-            mensagem,
-            ...listaMensagens
-        ]);
+
+        supabaseClient
+            .from('mensagens')
+            .insert([
+                mensagem
+            ])
+            .then(({ data }) => {
+                setListaMensagens([
+                    data[0],
+                    ...listaMensagens
+                ]);
+            });
+
         setMensagem('');
     }
+
 
 
     return (
@@ -93,6 +123,18 @@ export default function ChatPage() {
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
+                        <Button
+                            onClick={(event) => {
+                                const valor = event.target.value;
+                                setMensagem(valor);
+                                event.preventDefault();
+                                handleNovaMensagem(mensagem);
+                            }}
+                            variant='tertiary'
+                            colorVariant='neutral'
+                            label='Ok'
+                            href="/chat"
+                        />
                     </Box>
                 </Box>
             </Box>
@@ -119,12 +161,11 @@ function Header() {
 }
 
 function MessageList(props) {
-    console.log(props);
     return (
         <Box
             tag="ul"
             styleSheet={{
-                overflow: 'scroll',
+                overflow: 'auto',
                 display: 'flex',
                 flexDirection: 'column-reverse',
                 flex: 1,
@@ -159,7 +200,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/{vanessametonini}.png`}
+                                src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagem.de}
